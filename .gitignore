@@ -1,3 +1,9 @@
+# Other files
+AC
+AC/*
+lc.cpp
+lc.c
+
 # Compiled Object files
 *.slo
 *.lo
