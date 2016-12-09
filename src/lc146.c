@@ -17,6 +17,10 @@ struct node {
 };
 
 struct node *head;
+struct node *tail;
+
+#define KEY_RANGE 10000
+struct node* hash[KEY_RANGE];
 
 void printCache() {
     struct node *h = head->next;
@@ -38,6 +42,10 @@ void lruCacheInit(int capacity) {
         h->key = h->val = -1;
     }
     h->next = NULL;
+    tail = h;
+
+    for (int i = 0; i < KEY_RANGE; ++i)
+        hash[i] = NULL;
 }
 
 void lruCacheFree() {
@@ -50,47 +58,47 @@ void lruCacheFree() {
 }
 
 int lruCacheGet(int key) {
-    struct node *h = head->next;
-    // TODO: add a hashtable for the keys
-    while (h) {
-        if (h->key == key && h->val > 0) {
-            if (h->pre != head) {
-                h->pre->next = h->next;
-                if (h->next) h->next->pre = h->pre;
-                h->next = head->next;
-                head->next->pre = h;
-                head->next = h;
-                h->pre = head;
-            }
-            return h->val;
+    struct node *h = hash[key];
+    if (h) {
+        if (!h->next && h->pre != head) tail = h->pre;
+        if (h->pre != head) {
+            h->pre->next = h->next;
+            if (h->next) h->next->pre = h->pre;
+            h->next = head->next;
+            head->next->pre = h;
+            head->next = h;
+            h->pre = head;
         }
-        h = h->next;
+        return h->val;
     }
 
     return -1;
 }
 
 void lruCacheSet(int key, int value) {
-    struct node *h = head->next;
-    while (h) {
-        if (h->key == key && h->val > 0 || h->val <= 0 || h->next == NULL) {
-            h->key = key;
-            h->val = value;
-            if (h->pre != head) {
-                h->pre->next = h->next;
-                if (h->next) h->next->pre = h->pre;
-                h->next = head->next;
-                head->next->pre = h;
-                head->next = h;
-                h->pre = head;
-            }
-            return;
-        }
-        h = h->next;
+    struct node *h = hash[key];
+    if (!h) {
+        h = tail;
+        hash[tail->key] = NULL;
     }
+
+    h->key = key;
+    h->val = value;
+    if (!h->next && h->pre != head) tail = h->pre;
+    if (h->pre != head) {
+        h->pre->next = h->next;
+        if (h->next) h->next->pre = h->pre;
+        h->next = head->next;
+        head->next->pre = h;
+        head->next = h;
+        h->pre = head;
+    }
+
+    hash[key] = h;
 }
 
 int main() {
+    /*
     lruCacheInit(2);
     printCache();
     lruCacheSet(2, 1);
@@ -103,6 +111,20 @@ int main() {
     printCache();
     printf("%d\n", lruCacheGet(1));
     printCache();
+    */
 
+    lruCacheInit(1);
+    printCache();
+    lruCacheSet(2, 1);
+    printCache();
+    printf("%d\n", lruCacheGet(2));
+    printCache();
+    lruCacheSet(3, 2);
+    printCache();
+    printf("%d\n", lruCacheGet(2));
+    printCache();
+    printf("%d\n", lruCacheGet(3));
+    printCache();
+ 
     return 0;
 }
